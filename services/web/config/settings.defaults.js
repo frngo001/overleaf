@@ -113,6 +113,10 @@ const httpPermissionsPolicy = {
 module.exports = {
   env: 'server-ce',
 
+  // Git Bridge
+  enableGitBridge: process.env.GIT_BRIDGE_ENABLED === 'true',
+  gitBridgePublicBaseUrl: process.env.GIT_BRIDGE_PUBLIC_BASE_URL || 'http://localhost:8000',
+
   limits: {
     httpGlobalAgentMaxSockets: 300,
     httpsGlobalAgentMaxSockets: 300,

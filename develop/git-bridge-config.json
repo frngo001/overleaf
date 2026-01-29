@@ -1,0 +1,32 @@
+{
+  "port": 8000,
+  "bindIp": "0.0.0.0",
+  "idleTimeout": 30000,
+  "rootGitDirectory": "/tmp/wlgb",
+  "allowedCorsOrigins": "https://localhost",
+  "apiBaseUrl": "https://localhost/api/v0",
+  "postbackBaseUrl": "https://localhost",
+  "serviceName": "Overleaf",
+  "oauth2Server": "https://localhost",
+  "userPasswordEnabled": false,
+  "repoStore": {
+    "maxFileNum": 2000,
+    "maxFileSize": 52428800
+  },
+  "swapStore": {
+    "type": "noop",
+    "awsAccessKey": "",
+    "awsSecret": "",
+    "s3BucketName": "",
+    "awsRegion": "us-east-1",
+    "awsEndpoint": ""
+  },
+  "swapJob": {
+    "minProjects": 50,
+    "lowGiB": 128,
+    "highGiB": 256,
+    "intervalMillis": 3600000,
+    "compressionMethod": "gzip"
+  },
+  "sqliteHeapLimitBytes": 0
+}

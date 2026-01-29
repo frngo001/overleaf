@@ -21,6 +21,7 @@ convertKey('gcs.signedUrlExpiryInMs', s => parseInt(s, 10))
 convertKey('gcs.deleteConcurrency', s => parseInt(s, 10))
 convertKey('gcs.retryOptions.maxRetries', s => parseInt(s, 10))
 convertKey('fallback.buckets', s => JSON.parse(s || '{}'))
+convertKey('useSubdirectories', s => s === 'true')
 
 persistorConfig.Metrics = metrics
 

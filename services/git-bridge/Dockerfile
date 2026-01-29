@@ -18,7 +18,7 @@ RUN useradd --create-home node
 
 FROM base AS builder
 
-COPY . /app
+COPY services/git-bridge /app
 
 WORKDIR /app
 
@@ -42,9 +42,9 @@ COPY --from=builder /git-bridge.jar /
 COPY --from=envsubst_builder /go/bin/envsubst /opt/envsubst
 RUN chmod +x /opt/envsubst
 
-COPY conf/envsubst_template.json envsubst_template.json
-COPY start.sh start.sh
-COPY server-pro-start.sh server-pro-start.sh
+COPY services/git-bridge/conf/envsubst_template.json envsubst_template.json
+COPY services/git-bridge/start.sh start.sh
+COPY services/git-bridge/server-pro-start.sh server-pro-start.sh
 
 RUN mkdir conf
 RUN chown node:node conf

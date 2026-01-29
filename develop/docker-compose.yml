@@ -4,6 +4,7 @@ volumes:
   filestore-template-files:
   filestore-uploads:
   filestore-user-files:
+  git-bridge-data:
   mongo-data:
   redis-data:
   sharelatex-data:
@@ -21,19 +22,12 @@ services:
   clsi:
     build:
       context: ..
-      dockerfile: services/clsi/Dockerfile
+      dockerfile: services/clsi/Dockerfile.texlive
     env_file:
       - dev.env
     environment:
-      - TEXLIVE_IMAGE=texlive-full # docker build texlive -t texlive-full
-      - SANDBOXED_COMPILES=true
-      - SANDBOXED_COMPILES_HOST_DIR_COMPILES=${PWD}/compiles
-      - SANDBOXED_COMPILES_HOST_DIR_OUTPUT=${PWD}/output
-    user: root
+      - SANDBOXED_COMPILES=false
     volumes:
-      - ${PWD}/compiles:/overleaf/services/clsi/compiles
-      - ${PWD}/output:/overleaf/services/clsi/output
-      - ${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:/var/run/docker.sock
       - clsi-cache:/overleaf/services/clsi/cache
 
   contacts:
@@ -63,12 +57,24 @@ services:
       dockerfile: services/filestore/Dockerfile
     env_file:
       - dev.env
-#    environment:
-#      - ENABLE_CONVERSIONS=true
+    environment:
+      OVERLEAF_EDITOR_BLOBS_BUCKET: "/buckets/blobs"
+      OVERLEAF_EDITOR_PROJECT_BLOBS_BUCKET: "/buckets/project_blobs"
     volumes:
       - filestore-public-files:/overleaf/services/filestore/public_files
       - filestore-template-files:/overleaf/services/filestore/template_files
       - filestore-uploads:/overleaf/services/filestore/uploads
+      - history-v1-buckets:/buckets
+
+  git-bridge:
+    build:
+      context: ..
+      dockerfile: services/git-bridge/Dockerfile
+    volumes:
+      - git-bridge-data:/data/git-bridge
+      - ./git-bridge-config.json:/conf/runtime.json
+    ports:
+      - "127.0.0.1:8000:8000"
 
   history-v1:
     build:
@@ -83,6 +89,7 @@ services:
       OVERLEAF_EDITOR_PROJECT_BLOBS_BUCKET: "/buckets/project_blobs"
       OVERLEAF_EDITOR_ZIPS_BUCKET: "/buckets/zips"
       PERSISTOR_BACKEND: fs
+      USE_SUBDIRECTORIES: "true"
     volumes:
         - history-v1-buckets:/buckets
 
@@ -124,7 +131,7 @@ services:
       - dev.env
 
   redis:
-    image: redis:5
+    image: redis:7
     ports:
       - "127.0.0.1:6379:6379" # for debugging
     volumes:
@@ -139,10 +146,13 @@ services:
       - dev.env
     environment:
       - APP_NAME=Overleaf Community Edition
-      - ENABLED_LINKED_FILE_TYPES=project_file,project_output_file
+      - ENABLED_LINKED_FILE_TYPES=project_file,project_output_file,url
       - EMAIL_CONFIRMATION_DISABLED=true
       - NODE_ENV=development
       - OVERLEAF_ALLOW_PUBLIC_ACCESS=true
+      - GIT_BRIDGE_ENABLED=true
+      - GIT_BRIDGE_HOST=git-bridge
+      - GIT_BRIDGE_PORT=8000
     command: ["node", "app.mjs"]
     volumes:
       - sharelatex-data:/var/lib/overleaf
@@ -156,6 +166,7 @@ services:
       - docstore
       - document-updater
       - filestore
+      - git-bridge
       - history-v1
       - notifications
       - project-history

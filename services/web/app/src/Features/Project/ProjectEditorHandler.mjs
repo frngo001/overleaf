@@ -3,7 +3,7 @@ import Path from 'node:path'
 let ProjectEditorHandler
 
 export default ProjectEditorHandler = {
-  trackChangesAvailable: false,
+  trackChangesAvailable: true,
 
   buildProjectModelView(
     project,
@@ -42,17 +42,17 @@ export default ProjectEditorHandler = {
 
     result.features = _.defaults(ownerMember?.user?.features || {}, {
       collaborators: -1, // Infinite
-      versioning: false,
+      versioning: true,
       dropbox: false,
       compileTimeout: 60,
       compileGroup: 'standard',
-      templates: false,
-      references: false,
-      referencesSearch: false,
-      mendeley: false,
-      trackChanges: false,
+      templates: true,
+      references: true,
+      referencesSearch: true,
+      mendeley: true,
+      trackChanges: true,
       trackChangesVisible: ProjectEditorHandler.trackChangesAvailable,
-      symbolPalette: false,
+      symbolPalette: true,
     })
 
     if (result.features.trackChanges) {

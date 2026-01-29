@@ -35,6 +35,8 @@ import ExportsController from './Features/Exports/ExportsController.mjs'
 import PasswordResetRouter from './Features/PasswordReset/PasswordResetRouter.mjs'
 import StaticPagesRouter from './Features/StaticPages/StaticPagesRouter.mjs'
 import ChatController from './Features/Chat/ChatController.mjs'
+import EditorRealTimeController from './Features/Editor/EditorRealTimeController.mjs'
+import { Project } from './models/Project.mjs'
 import Modules from './infrastructure/Modules.mjs'
 import {
   RateLimiter,
@@ -995,7 +997,153 @@ async function initialize(webRouter, privateApiRouter, publicApiRouter) {
       PermissionsController.requirePermission('chat'),
       ChatController.editMessage
     )
+    webRouter.get(
+      '/project/:project_id/threads',
+      AuthorizationMiddleware.blockRestrictedUserFromProject,
+      AuthorizationMiddleware.ensureUserCanReadProject,
+      PermissionsController.requirePermission('chat'),
+      ChatController.getThreads
+    )
+
+    // Thread comment endpoints (without doc_id)
+    webRouter.post(
+      '/project/:project_id/thread/:thread_id/messages',
+      AuthorizationMiddleware.blockRestrictedUserFromProject,
+      AuthorizationMiddleware.ensureUserCanReadProject,
+      PermissionsController.requirePermission('chat'),
+      ChatController.sendComment
+    )
+    webRouter.post(
+      '/project/:project_id/thread/:thread_id/messages/:message_id/edit',
+      AuthorizationMiddleware.blockRestrictedUserFromProject,
+      AuthorizationMiddleware.ensureUserCanReadProject,
+      PermissionsController.requirePermission('chat'),
+      ChatController.editThreadMessage
+    )
+    webRouter.delete(
+      '/project/:project_id/thread/:thread_id/messages/:message_id',
+      AuthorizationMiddleware.blockRestrictedUserFromProject,
+      AuthorizationMiddleware.ensureUserCanReadProject,
+      PermissionsController.requirePermission('chat'),
+      ChatController.deleteThreadMessage
+    )
+    webRouter.post(
+      '/project/:project_id/thread/:thread_id/resolve',
+      AuthorizationMiddleware.blockRestrictedUserFromProject,
+      AuthorizationMiddleware.ensureUserCanReadProject,
+      PermissionsController.requirePermission('chat'),
+      ChatController.resolveThread
+    )
+    webRouter.post(
+      '/project/:project_id/thread/:thread_id/reopen',
+      AuthorizationMiddleware.blockRestrictedUserFromProject,
+      AuthorizationMiddleware.ensureUserCanReadProject,
+      PermissionsController.requirePermission('chat'),
+      ChatController.reopenThread
+    )
+    webRouter.delete(
+      '/project/:project_id/thread/:thread_id',
+      AuthorizationMiddleware.blockRestrictedUserFromProject,
+      AuthorizationMiddleware.ensureUserCanReadProject,
+      PermissionsController.requirePermission('chat'),
+      ChatController.deleteThread
+    )
+
+    // Thread comment endpoints (with doc_id - used by review panel)
+    webRouter.post(
+      '/project/:project_id/doc/:doc_id/thread/:thread_id/messages',
+      AuthorizationMiddleware.blockRestrictedUserFromProject,
+      AuthorizationMiddleware.ensureUserCanReadProject,
+      PermissionsController.requirePermission('chat'),
+      ChatController.sendComment
+    )
+    webRouter.post(
+      '/project/:project_id/doc/:doc_id/thread/:thread_id/messages/:message_id/edit',
+      AuthorizationMiddleware.blockRestrictedUserFromProject,
+      AuthorizationMiddleware.ensureUserCanReadProject,
+      PermissionsController.requirePermission('chat'),
+      ChatController.editThreadMessage
+    )
+    webRouter.delete(
+      '/project/:project_id/doc/:doc_id/thread/:thread_id/messages/:message_id',
+      AuthorizationMiddleware.blockRestrictedUserFromProject,
+      AuthorizationMiddleware.ensureUserCanReadProject,
+      PermissionsController.requirePermission('chat'),
+      ChatController.deleteThreadMessage
+    )
+    webRouter.post(
+      '/project/:project_id/doc/:doc_id/thread/:thread_id/resolve',
+      AuthorizationMiddleware.blockRestrictedUserFromProject,
+      AuthorizationMiddleware.ensureUserCanReadProject,
+      PermissionsController.requirePermission('chat'),
+      ChatController.resolveThread
+    )
+    webRouter.post(
+      '/project/:project_id/doc/:doc_id/thread/:thread_id/reopen',
+      AuthorizationMiddleware.blockRestrictedUserFromProject,
+      AuthorizationMiddleware.ensureUserCanReadProject,
+      PermissionsController.requirePermission('chat'),
+      ChatController.reopenThread
+    )
+    webRouter.delete(
+      '/project/:project_id/doc/:doc_id/thread/:thread_id',
+      AuthorizationMiddleware.blockRestrictedUserFromProject,
+      AuthorizationMiddleware.ensureUserCanReadProject,
+      PermissionsController.requirePermission('chat'),
+      ChatController.deleteThread
+    )
   }
+
+  // Track changes users endpoint (stub for Community Edition)
+  webRouter.get(
+    '/project/:project_id/changes/users',
+    AuthorizationMiddleware.blockRestrictedUserFromProject,
+    AuthorizationMiddleware.ensureUserCanReadProject,
+    (req, res) => res.json([])
+  )
+
+  // Track changes toggle endpoint
+  webRouter.post(
+    '/project/:project_id/track_changes',
+    AuthorizationMiddleware.blockRestrictedUserFromProject,
+    AuthorizationMiddleware.ensureUserCanWriteProjectSettings,
+    async (req, res, next) => {
+      try {
+        const { project_id: projectId } = req.params
+        const { on, on_for, on_for_guests } = req.body
+
+        // Build the track_changes object
+        let trackChanges
+        if (on !== undefined) {
+          // Simple on/off for everyone
+          trackChanges = on
+        } else if (on_for !== undefined || on_for_guests !== undefined) {
+          // Per-user track changes
+          trackChanges = { ...on_for }
+          if (on_for_guests !== undefined) {
+            trackChanges.__guests__ = on_for_guests
+          }
+        }
+
+        // Update the project in the database
+        await Project.updateOne(
+          { _id: projectId },
+          { $set: { track_changes: trackChanges } }
+        )
+
+        // Broadcast the change to connected clients
+        EditorRealTimeController.emitToRoom(
+          projectId,
+          'toggle-track-changes',
+          trackChanges
+        )
+
+        res.sendStatus(204)
+      } catch (err) {
+        next(err)
+      }
+    }
+  )
 
   webRouter.post(
     '/project/:Project_id/references/indexAll',

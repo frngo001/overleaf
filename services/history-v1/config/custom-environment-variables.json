@@ -6,6 +6,7 @@
   "databasePoolMax": "DATABASE_POOL_MAX",
   "persistor": {
     "backend": "PERSISTOR_BACKEND",
+    "useSubdirectories": "USE_SUBDIRECTORIES",
     "s3": {
       "key": "AWS_ACCESS_KEY_ID",
       "secret": "AWS_SECRET_ACCESS_KEY",
